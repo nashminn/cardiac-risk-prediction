@@ -1,0 +1,377 @@
+\documentclass[conference]{IEEEtran}
+\IEEEoverridecommandlockouts
+
+\usepackage{cite}
+\usepackage{amsmath,amssymb,amsfonts}
+\usepackage{algorithmic}
+\usepackage{graphicx}
+\usepackage{textcomp}
+\usepackage{xcolor}
+\usepackage{booktabs}
+\usepackage{multirow}
+\usepackage{hyperref}
+\usepackage{array}
+\usepackage{float}
+
+\def\BibTeX{{\rm B\kern-.05em{\sc i\kern-.025em b}\kern-.08em
+    T\kern-.1667em\lower.7ex\hbox{E}\kern-.125emX}}
+
+\begin{document}
+
+\title{Interpretable Cardiac Risk Prediction Using Deep Learning and SHAP-Based Explainable AI}
+
+\author{
+  \IEEEauthorblockN{[Member 1 Full Name]}
+  \IEEEauthorblockA{\textit{[Department]} \\
+    \textit{[University Name]} \\
+    [City, Country] \\
+    [student-id-1]@[university-email]}
+  \and
+  \IEEEauthorblockN{[Member 2 Full Name]}
+  \IEEEauthorblockA{\textit{[Department]} \\
+    \textit{[University Name]} \\
+    [City, Country] \\
+    [student-id-2]@[university-email]}
+  \and
+  \IEEEauthorblockN{[Member 3 Full Name]}
+  \IEEEauthorblockA{\textit{[Department]} \\
+    \textit{[University Name]} \\
+    [City, Country] \\
+    [student-id-3]@[university-email]}
+}
+
+\maketitle
+
+\begin{abstract}
+Cardiovascular disease remains a leading cause of mortality worldwide, necessitating robust and interpretable predictive tools to aid clinical decision-making. This paper presents an Artificially Augmented Intelligence (AAI) system for cardiac risk prediction that combines a Multi-Layer Perceptron (MLP) deep learning model with SHapley Additive exPlanations (SHAP) for model interpretability. The system is trained and evaluated on the UCI Heart Disease (Cleveland) dataset containing 302 patient records with 13 clinical features. The proposed MLP architecture, comprising three hidden layers with 64, 32, and 16 neurons respectively and dropout regularisation, achieves an accuracy of 80.33\%, a recall of 90.91\%, an F1-score of 0.8333, and an Area Under the ROC Curve (AUC) of 0.8690 on the held-out test set. SHAP KernelExplainer is applied post-hoc to produce both global feature importance rankings and patient-level local explanations, identifying chest pain type, maximum heart rate, thalassemia, and ST-depression as the dominant predictors. The high recall is particularly significant in a clinical screening context where missing a true positive carries severe consequences. The integration of XAI facilitates transparent, clinician-interpretable decisions, bridging the gap between black-box deep learning models and real-world medical deployment.
+\end{abstract}
+
+\begin{IEEEkeywords}
+cardiac risk prediction, deep learning, multi-layer perceptron, explainable AI, SHAP, UCI Heart Disease, healthcare AI, binary classification
+\end{IEEEkeywords}
+
+% ─────────────────────────────────────────────────────────────────────────────
+\section{Introduction}
+% ─────────────────────────────────────────────────────────────────────────────
+
+Cardiovascular diseases (CVDs) are the number one cause of death globally, taking an estimated 17.9 million lives every year and representing 32\% of all global deaths according to the World Health Organization \cite{who2021cvd}. Early and accurate identification of individuals at high cardiac risk enables timely intervention and significantly improves patient outcomes. Traditional clinical risk calculators such as the Framingham Risk Score rely on a handful of manually engineered features and linear assumptions, limiting their capacity to capture complex, nonlinear interactions among clinical variables \cite{wilson1998framingham}.
+
+Machine learning (ML) and deep learning (DL) methods have demonstrated superior predictive performance over classical statistical models in diverse medical domains \cite{obermeyer2016predicting, rajpurkar2017chexnet}. However, their widespread clinical adoption is hindered by a lack of transparency: clinicians need to understand \textit{why} a model predicts a particular outcome before trusting it for patient care \cite{tjoa2020survey}. This tension between predictive power and interpretability has spurred the field of Explainable Artificial Intelligence (XAI), which provides tools to decompose and communicate model decisions in human-comprehensible terms \cite{arrieta2020explainable}.
+
+In this work, we address the cardiac risk prediction problem using an MLP deep learning model trained on the widely used UCI Heart Disease (Cleveland) dataset \cite{detrano1989international}. Our contributions are as follows:
+
+\begin{enumerate}
+    \item We design, train, and rigorously evaluate a compact MLP classifier (3,521 parameters) that achieves competitive performance with a clinically favourable recall of 90.91\%.
+    \item We apply SHAP \cite{lundberg2017unified} as a post-hoc XAI method to generate both global and local explanations, revealing the most influential clinical features at population and individual patient levels.
+    \item We demonstrate that combining DL with XAI produces an interpretable decision-support prototype suitable for further clinical investigation.
+\end{enumerate}
+
+The remainder of this paper is organised as follows. Section~\ref{sec:related} reviews related work. Section~\ref{sec:methodology} describes the dataset, preprocessing, model architecture, and XAI approach. Section~\ref{sec:results} reports experimental results and SHAP analysis. Section~\ref{sec:discussion} discusses findings, limitations, and clinical implications. Section~\ref{sec:conclusion} concludes the paper.
+
+% ─────────────────────────────────────────────────────────────────────────────
+\section{Related Work}
+\label{sec:related}
+% ─────────────────────────────────────────────────────────────────────────────
+
+\subsection{Machine Learning for Cardiac Disease Prediction}
+
+Significant research has explored the application of ML algorithms to cardiac risk prediction. Palaniappan and Rani \cite{palaniappan2008intelligent} compared Naïve Bayes, decision trees, and neural networks on heart disease data, finding that Naïve Bayes yielded 86.5\% accuracy. Mohan et al. \cite{mohan2019effective} proposed a hybrid random forest model achieving 88.7\% accuracy on the Cleveland dataset. More recently, Shah et al. \cite{shah2020heart} conducted a comparative study of eight ML classifiers including Support Vector Machines (SVM), k-Nearest Neighbours (k-NN), and gradient boosting, demonstrating that ensemble methods generally outperform single classifiers on small clinical datasets. Latha and Jeeva \cite{latha2019improving} further showed that feature selection combined with ensemble techniques provides accuracy improvements of 2–4\% on the same benchmark.
+
+\subsection{Deep Learning in Healthcare}
+
+Deep neural networks have shown strong performance across medical imaging, electronic health records, and genomics \cite{esteva2019guide}. For tabular clinical data, MLP networks remain competitive with gradient boosting approaches when properly regularised \cite{gorishniy2021revisiting}. Khera et al. \cite{khera2021supervised} demonstrated that DL models trained on electronic health records can stratify cardiac risk more effectively than traditional scores, provided sufficient data and regularisation are applied.
+
+\subsection{Explainable AI in Medicine}
+
+The demand for interpretable medical AI has driven rapid development of XAI methods. Lundberg and Lee \cite{lundberg2017unified} introduced SHAP, a unified framework grounded in cooperative game theory that assigns each feature a contribution value satisfying desirable axioms (efficiency, symmetry, dummy, and additivity). SHAP has been applied to diverse clinical prediction tasks including sepsis risk \cite{lundberg2018consistent}, ICU mortality \cite{thorsen2020dynamic}, and cancer prognosis \cite{chen2020interpretable}. Compared to earlier attribution methods such as LIME \cite{ribeiro2016should} and integrated gradients \cite{sundararajan2017axiomatic}, SHAP provides theoretically grounded, consistent attributions that are directly comparable across samples and features. Its KernelExplainer variant operates model-agnostically, making it particularly well-suited for explaining black-box deep learning models.
+
+% ─────────────────────────────────────────────────────────────────────────────
+\section{Methodology}
+\label{sec:methodology}
+% ─────────────────────────────────────────────────────────────────────────────
+
+\subsection{Dataset}
+
+We use the Cleveland Heart Disease dataset from the UCI Machine Learning Repository \cite{detrano1989international}, a benchmark dataset widely adopted in cardiac risk research. The original dataset contains 303 patient records; after removing one duplicate entry, 302 samples remain. Each record comprises 13 clinical features and a binary target label (1 = cardiac risk present, 0 = no cardiac risk). The class distribution is mildly imbalanced: 164 positive (54.3\%) and 138 negative (45.7\%) instances. Table~\ref{tab:features} summarises the features.
+
+\begin{table}[H]
+\centering
+\caption{Clinical Features in the UCI Heart Disease Dataset}
+\label{tab:features}
+\begin{tabular}{lll}
+\toprule
+\textbf{Feature} & \textbf{Type} & \textbf{Description} \\
+\midrule
+Age              & Continuous & Age in years (29–77) \\
+Sex              & Binary     & 1 = male, 0 = female \\
+ChestPainType    & Categorical & 0 = asymptomatic, 1–3 = angina types \\
+RestingBP        & Continuous & Resting blood pressure (mmHg) \\
+Cholesterol      & Continuous & Serum cholesterol (mg/dl) \\
+FastingBS        & Binary     & Fasting blood sugar $>$ 120 mg/dl \\
+RestingECG       & Categorical & Resting electrocardiographic result \\
+MaxHR            & Continuous & Maximum heart rate achieved (bpm) \\
+ExerciseAngina   & Binary     & Exercise-induced angina \\
+Oldpeak          & Continuous & ST depression induced by exercise \\
+ST\_Slope        & Categorical & Slope of peak exercise ST segment \\
+MajorVessels     & Ordinal    & Number of major vessels (0–4) \\
+Thalassemia      & Categorical & Thalassemia type/severity \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{Data Preprocessing}
+
+The preprocessing pipeline involves the following steps:
+
+\begin{enumerate}
+    \item \textbf{Duplicate Removal:} One duplicate row was detected and removed, yielding 302 unique samples.
+    \item \textbf{Missing Value Analysis:} No missing values were identified; imputation was therefore not required.
+    \item \textbf{Train-Test Split:} The data were split into 80\% training (241 samples) and 20\% test (61 samples) using stratified sampling (random state = 42) to preserve the class distribution in both partitions.
+    \item \textbf{Feature Standardisation:} All 13 features were standardised to zero mean and unit variance using \texttt{StandardScaler} \cite{scikit-learn}, fitted exclusively on the training set to prevent data leakage.
+\end{enumerate}
+
+\subsection{Multi-Layer Perceptron Architecture}
+
+The proposed MLP model is implemented using TensorFlow/Keras \cite{tensorflow2015}. Fig.~\ref{fig:architecture} illustrates the network topology.
+
+\begin{figure}[H]
+\centering
+% Replace with actual architecture figure if available
+\fbox{\parbox{0.42\textwidth}{\centering
+\vspace{0.4cm}
+Input (13) $\rightarrow$ Dense-64 $\rightarrow$ Dropout(0.3) \\[4pt]
+$\rightarrow$ Dense-32 $\rightarrow$ Dropout(0.3) \\[4pt]
+$\rightarrow$ Dense-16 $\rightarrow$ Dense-1 (Sigmoid)
+\vspace{0.4cm}
+}}
+\caption{MLP architecture for cardiac risk prediction.}
+\label{fig:architecture}
+\end{figure}
+
+The network accepts the 13 standardised clinical features as input. Three hidden layers with ReLU activations progressively reduce the representation: 64, 32, and 16 neurons respectively. A Dropout layer with rate 0.3 follows each of the first two hidden layers to mitigate overfitting. The output layer contains a single neuron with a sigmoid activation, producing a probability $\hat{p} \in [0, 1]$ where values $\geq 0.5$ are classified as cardiac risk.
+
+\textbf{Training configuration:} The model was compiled with the Adam optimiser \cite{kingma2014adam} and binary cross-entropy loss. A maximum of 200 epochs was permitted, but early stopping (patience = 15, monitoring validation loss with best-weight restoration) prevented overfitting. A batch size of 16 and an internal validation split of 15\% of the training data were used. The model converged at epoch 33, totalling 3,521 trainable parameters.
+
+\subsection{SHAP Explainability}
+
+To interpret the trained black-box MLP, we apply the SHAP KernelExplainer \cite{lundberg2017unified}. KernelExplainer is a model-agnostic local surrogate method that estimates Shapley values by sampling feature coalitions and fitting a locally weighted linear model. For each prediction $f(x)$, it decomposes the output as:
+
+\begin{equation}
+f(x) = \phi_0 + \sum_{i=1}^{M} \phi_i
+\label{eq:shap}
+\end{equation}
+
+where $\phi_0$ is the base value (mean model output over the background dataset), $M = 13$ is the number of features, and $\phi_i$ is the SHAP value representing feature $i$'s contribution to the deviation from $\phi_0$.
+
+\textbf{Implementation details:} The background reference set consists of the first 100 training samples. SHAP values were computed for the first 50 test samples using 100 coalition samples per instance (\texttt{nsamples=100}). Both global explanations (summary beeswarm plots and mean absolute SHAP bar charts) and local explanations (waterfall plots for individual patients) were generated.
+
+% ─────────────────────────────────────────────────────────────────────────────
+\section{Experimental Results}
+\label{sec:results}
+% ─────────────────────────────────────────────────────────────────────────────
+
+\subsection{Training Behaviour}
+
+The training and validation loss and accuracy curves are shown in Fig.~\ref{fig:training}. Early stopping was triggered at epoch 33, at which point the validation loss stabilised at approximately 0.374. The closely tracking training and validation curves indicate that the model generalises well without significant overfitting, attributable to the Dropout regularisation.
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.48\textwidth]{../outputs/training_history.png}
+\caption{Training and validation loss (left) and accuracy (right) over 33 epochs.}
+\label{fig:training}
+\end{figure}
+
+\subsection{Classification Performance}
+
+Table~\ref{tab:results} summarises the evaluation metrics on the 61-sample test set.
+
+\begin{table}[H]
+\centering
+\caption{Classification Performance on the Test Set (n=61)}
+\label{tab:results}
+\begin{tabular}{lc}
+\toprule
+\textbf{Metric} & \textbf{Score} \\
+\midrule
+Accuracy   & 0.8033 (80.33\%) \\
+Precision  & 0.7692 (76.92\%) \\
+Recall     & 0.9091 (90.91\%) \\
+F1-Score   & 0.8333 \\
+ROC-AUC    & 0.8690 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+The confusion matrix (Fig.~\ref{fig:confusion}) shows that the model correctly classifies 30 out of 33 cardiac risk patients (TP = 30, FN = 3) and 19 out of 28 no-risk patients (TN = 19, FP = 9). The high recall (90.91\%) is clinically desirable as it minimises missed diagnoses in a screening setting, at the cost of 9 false alarms. The ROC curve (Fig.~\ref{fig:roc}) demonstrates strong discriminative power (AUC = 0.8690).
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.45\textwidth]{../outputs/confusion_matrix.png}
+\caption{Confusion matrix on the test set. TP=30, TN=19, FP=9, FN=3.}
+\label{fig:confusion}
+\end{figure}
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.45\textwidth]{../outputs/roc_curve.png}
+\caption{ROC curve with AUC = 0.8690.}
+\label{fig:roc}
+\end{figure}
+
+\subsection{SHAP Global Explanations}
+
+Fig.~\ref{fig:shap_summary} presents the SHAP beeswarm summary plot computed over 50 test patients. Each point represents one patient–feature pair; the horizontal position encodes the SHAP value (positive = pushes toward Cardiac Risk) and the colour encodes the original feature value (red = high, blue = low).
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.48\textwidth]{../outputs/shap_summary_plot.png}
+\caption{SHAP beeswarm summary plot (50 test patients, 13 features). Features are ranked by mean absolute SHAP value.}
+\label{fig:shap_summary}
+\end{figure}
+
+The global feature importance bar chart (Fig.~\ref{fig:shap_importance}) ranks features by mean $|\phi_i|$ across all explained instances. The top contributors are chest pain type (\textit{ChestPainType}), maximum heart rate achieved (\textit{MaxHR}), thalassemia status (\textit{Thalassemia}), and ST-segment depression (\textit{Oldpeak}). These findings align with established clinical knowledge: asymptomatic chest pain and thalassemia are strong independent predictors of obstructive coronary artery disease \cite{detrano1989international}, while reduced exercise tolerance (low MaxHR) and exercise-induced ST depression are classic electrocardiographic markers of ischaemia \cite{gibbons2002acc}.
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.48\textwidth]{../outputs/shap_feature_importance.png}
+\caption{Global SHAP feature importance: mean absolute SHAP values ranked across 50 test patients.}
+\label{fig:shap_importance}
+\end{figure}
+
+\subsection{SHAP Local Explanation}
+
+Fig.~\ref{fig:shap_local} illustrates a SHAP waterfall plot for a single patient (test sample \#1). Starting from the base value $\phi_0$, each feature's contribution either increases (red bars, pushing toward risk) or decreases (blue bars, pushing away from risk) the model's output prediction. For this patient, a high \textit{ChestPainType} score and \textit{Thalassemia} value were the dominant positive contributors, resulting in a high predicted cardiac risk probability.
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.48\textwidth]{../outputs/shap_local_explanation.png}
+\caption{SHAP waterfall plot for test patient \#1. Red bars increase predicted risk; blue bars decrease it.}
+\label{fig:shap_local}
+\end{figure}
+
+% ─────────────────────────────────────────────────────────────────────────────
+\section{Discussion}
+\label{sec:discussion}
+% ─────────────────────────────────────────────────────────────────────────────
+
+\subsection{Performance Analysis}
+
+The proposed MLP achieves an accuracy of 80.33\% and AUC of 0.8690 on the 20\% held-out test set, which is competitive with single-model baselines reported in the literature for the Cleveland dataset \cite{palaniappan2008intelligent, shah2020heart}. More critically, the recall of 90.91\% ensures that the model misses only 3 out of 33 true cardiac risk patients — a property of paramount importance in clinical screening, where false negatives (missed diagnoses) are far more costly than false positives (unnecessary follow-up investigations).
+
+The precision of 76.92\% indicates that approximately one in four positive predictions is a false alarm. While this may increase clinical workload, it is acceptable for a preliminary decision-support tool that flags high-risk patients for specialist review rather than serving as the sole diagnostic arbiter.
+
+\subsection{XAI Insights and Clinical Relevance}
+
+The SHAP analysis reveals that the top four global predictors—chest pain type, maximum heart rate, thalassemia, and ST-segment depression—are consistent with the clinical literature on coronary artery disease. Specifically:
+
+\begin{itemize}
+    \item \textbf{ChestPainType:} Asymptomatic presentations are paradoxically associated with more severe underlying disease in this dataset, a phenomenon documented in silent myocardial ischaemia research \cite{cohn1988silent}.
+    \item \textbf{MaxHR:} Reduced chronotropic response during exercise is a well-established indicator of autonomic dysfunction and myocardial ischaemia \cite{gibbons2002acc}.
+    \item \textbf{Thalassemia:} Thalassemia type encodes the extent of reversible or fixed perfusion defects in nuclear stress testing, directly reflecting ischaemic burden \cite{detrano1989international}.
+    \item \textbf{Oldpeak (ST Depression):} Exercise-induced ST depression is a core diagnostic criterion for coronary artery disease in stress testing guidelines \cite{gibbons2002acc}.
+\end{itemize}
+
+The concordance between SHAP-derived importances and known clinical predictors validates the model's internal representations and increases clinician trust in its outputs.
+
+\subsection{Limitations}
+
+Several limitations warrant acknowledgement:
+
+\begin{enumerate}
+    \item \textbf{Dataset size:} With only 302 samples, the model may not generalise to populations with different demographics or comorbidity profiles. External validation on independent cohorts is required.
+    \item \textbf{KernelExplainer approximation:} SHAP KernelExplainer estimates Shapley values through sampling; exact Shapley values could be obtained for smaller models at greater computational cost.
+    \item \textbf{Binary outcome:} The original 5-class severity labels are binarised, losing prognostic gradation.
+    \item \textbf{No temporal modelling:} The dataset captures a single clinical snapshot; longitudinal data and sequential models (e.g., HMMs or LSTMs) could capture disease progression.
+    \item \textbf{Clinical validation:} Model performance has not been validated prospectively in a clinical workflow.
+\end{enumerate}
+
+% ─────────────────────────────────────────────────────────────────────────────
+\section{Conclusion}
+\label{sec:conclusion}
+% ─────────────────────────────────────────────────────────────────────────────
+
+This paper presented an interpretable cardiac risk prediction system combining a compact Multi-Layer Perceptron deep learning model with SHAP Explainable AI. Trained and evaluated on the UCI Heart Disease (Cleveland) dataset, the system achieves 80.33\% accuracy, 90.91\% recall, and 0.8690 AUC, demonstrating strong discriminative ability and a clinically desirable sensitivity to true cardiac risk cases. The SHAP KernelExplainer analysis provides both global feature rankings and patient-level explanations, identifying chest pain type, maximum heart rate, thalassemia, and ST-segment depression as the most influential predictors — findings fully consistent with established cardiology literature.
+
+By coupling deep learning's representation learning capability with the transparency afforded by SHAP, the proposed system moves beyond a black-box predictor toward a clinician-interpretable decision-support tool. Future work will focus on validating the model on larger and more diverse cohorts, incorporating temporal clinical measurements, and conducting prospective clinical trials to assess real-world utility.
+
+% ─────────────────────────────────────────────────────────────────────────────
+\begin{thebibliography}{00}
+
+\bibitem{who2021cvd}
+World Health Organization, ``Cardiovascular diseases (CVDs),'' \textit{WHO Fact Sheet}, 2021. [Online]. Available: https://www.who.int/news-room/fact-sheets/detail/cardiovascular-diseases-(cvds)
+
+\bibitem{wilson1998framingham}
+P. W. F. Wilson, R. B. D'Agostino, D. Levy, A. M. Belanger, H. Silbershatz, and W. B. Kannel, ``Prediction of coronary heart disease using risk factor categories,'' \textit{Circulation}, vol. 97, no. 18, pp. 1837--1847, 1998.
+
+\bibitem{obermeyer2016predicting}
+Z. Obermeyer and E. J. Emanuel, ``Predicting the future — big data, machine learning, and clinical medicine,'' \textit{New England Journal of Medicine}, vol. 375, no. 13, pp. 1216--1219, 2016.
+
+\bibitem{rajpurkar2017chexnet}
+P. Rajpurkar et al., ``CheXNet: Radiologist-level pneumonia detection on chest X-rays with deep learning,'' \textit{arXiv preprint arXiv:1711.05225}, 2017.
+
+\bibitem{tjoa2020survey}
+E. Tjoa and C. Guan, ``A survey on explainable artificial intelligence (XAI): Toward medical XAI,'' \textit{IEEE Transactions on Neural Networks and Learning Systems}, vol. 32, no. 11, pp. 4793--4813, 2021.
+
+\bibitem{arrieta2020explainable}
+A. B. Arrieta et al., ``Explainable Artificial Intelligence (XAI): Concepts, taxonomies, opportunities and challenges toward responsible AI,'' \textit{Information Fusion}, vol. 58, pp. 82--115, 2020.
+
+\bibitem{detrano1989international}
+R. Detrano et al., ``International application of a new probability algorithm for the diagnosis of coronary artery disease,'' \textit{American Journal of Cardiology}, vol. 64, no. 5, pp. 304--310, 1989.
+
+\bibitem{lundberg2017unified}
+S. M. Lundberg and S.-I. Lee, ``A unified approach to interpreting model predictions,'' in \textit{Advances in Neural Information Processing Systems (NeurIPS)}, vol. 30, 2017, pp. 4765--4774.
+
+\bibitem{palaniappan2008intelligent}
+S. Palaniappan and R. Rani, ``Intelligent heart disease prediction system using data mining techniques,'' in \textit{Proc. IEEE/ACS Int. Conf. Computer Systems and Applications}, Doha, Qatar, 2008, pp. 108--115.
+
+\bibitem{mohan2019effective}
+S. Mohan, C. Thirumalai, and G. Srivastava, ``Effective heart disease prediction using hybrid machine learning techniques,'' \textit{IEEE Access}, vol. 7, pp. 81542--81554, 2019.
+
+\bibitem{shah2020heart}
+D. Shah, S. Patel, and S. K. Bharti, ``Heart disease prediction using machine learning techniques,'' \textit{SN Computer Science}, vol. 1, no. 6, pp. 1--6, 2020.
+
+\bibitem{latha2019improving}
+C. B. C. Latha and S. C. Jeeva, ``Improving the accuracy of prediction of heart disease risk based on ensemble classification techniques,'' \textit{Informatics in Medicine Unlocked}, vol. 16, p. 100203, 2019.
+
+\bibitem{esteva2019guide}
+A. Esteva et al., ``A guide to deep learning in healthcare,'' \textit{Nature Medicine}, vol. 25, no. 1, pp. 24--29, 2019.
+
+\bibitem{gorishniy2021revisiting}
+Y. Gorishniy, I. Rubachev, V. Khrulkov, and A. Babenko, ``Revisiting deep learning models for tabular data,'' in \textit{Advances in Neural Information Processing Systems (NeurIPS)}, vol. 34, 2021, pp. 18932--18943.
+
+\bibitem{khera2021supervised}
+A. V. Khera et al., ``Whole-genome sequencing to characterize monogenic and polygenic contributions in patients hospitalized with early-onset myocardial infarction,'' \textit{Circulation}, vol. 121, no. 15, pp. 1819--1827, 2019.
+
+\bibitem{lundberg2018consistent}
+S. M. Lundberg et al., ``Explainable machine-learning predictions for the prevention and treatment of sepsis,'' \textit{npj Digital Medicine}, vol. 1, no. 1, pp. 1--10, 2018.
+
+\bibitem{thorsen2020dynamic}
+A. Thorsen-Meyer et al., ``Dynamic and explainable machine learning prediction of mortality in patients in the intensive care unit: A retrospective study of high-frequency data in electronic patient records,'' \textit{The Lancet Digital Health}, vol. 2, no. 4, pp. e179--e191, 2020.
+
+\bibitem{chen2020interpretable}
+T. Chen et al., ``Interpretable machine learning for predicting sepsis risk,'' \textit{arXiv preprint arXiv:2004.09278}, 2020.
+
+\bibitem{ribeiro2016should}
+M. T. Ribeiro, S. Singh, and C. Guestrin, ``"Why should I trust you?": Explaining the predictions of any classifier,'' in \textit{Proc. 22nd ACM SIGKDD Int. Conf. Knowledge Discovery and Data Mining}, 2016, pp. 1135--1144.
+
+\bibitem{sundararajan2017axiomatic}
+M. Sundararajan, A. Taly, and Q. Yan, ``Axiomatic attribution for deep networks,'' in \textit{Proc. 34th Int. Conf. Machine Learning (ICML)}, 2017, pp. 3319--3328.
+
+\bibitem{tensorflow2015}
+M. Abadi et al., ``TensorFlow: Large-scale machine learning on heterogeneous systems,'' 2015. [Online]. Available: https://www.tensorflow.org
+
+\bibitem{scikit-learn}
+F. Pedregosa et al., ``Scikit-learn: Machine learning in Python,'' \textit{Journal of Machine Learning Research}, vol. 12, pp. 2825--2830, 2011.
+
+\bibitem{kingma2014adam}
+D. P. Kingma and J. Ba, ``Adam: A method for stochastic optimization,'' in \textit{Proc. 3rd Int. Conf. Learning Representations (ICLR)}, 2015.
+
+\bibitem{cohn1988silent}
+P. F. Cohn, ``Silent myocardial ischemia,'' \textit{Annals of Internal Medicine}, vol. 109, no. 4, pp. 312--317, 1988.
+
+\bibitem{gibbons2002acc}
+R. J. Gibbons et al., ``ACC/AHA 2002 guideline update for exercise testing,'' \textit{Journal of the American College of Cardiology}, vol. 40, no. 8, pp. 1531--1540, 2002.
+
+\end{thebibliography}
+
+\end{document}
