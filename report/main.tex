@@ -176,7 +176,7 @@ The training and validation loss and accuracy curves are shown in Fig.~\ref{fig:
 
 \begin{figure}[H]
 \centering
-\includegraphics[width=0.48\textwidth]{../outputs/training_history.png}
+\includegraphics[width=0.48\textwidth]{./outputs/training_history.png}
 \caption{Training and validation loss (left) and accuracy (right) over 33 epochs.}
 \label{fig:training}
 \end{figure}
@@ -206,14 +206,14 @@ The confusion matrix (Fig.~\ref{fig:confusion}) shows that the model correctly c
 
 \begin{figure}[H]
 \centering
-\includegraphics[width=0.45\textwidth]{../outputs/confusion_matrix.png}
+\includegraphics[width=0.45\textwidth]{./outputs/confusion_matrix.png}
 \caption{Confusion matrix on the test set. TP=30, TN=19, FP=9, FN=3.}
 \label{fig:confusion}
 \end{figure}
 
 \begin{figure}[H]
 \centering
-\includegraphics[width=0.45\textwidth]{../outputs/roc_curve.png}
+\includegraphics[width=0.45\textwidth]{./outputs/roc_curve.png}
 \caption{ROC curve with AUC = 0.8690.}
 \label{fig:roc}
 \end{figure}
@@ -224,7 +224,7 @@ Fig.~\ref{fig:shap_summary} presents the SHAP beeswarm summary plot computed ove
 
 \begin{figure}[H]
 \centering
-\includegraphics[width=0.48\textwidth]{../outputs/shap_summary_plot.png}
+\includegraphics[width=0.48\textwidth]{./outputs/shap_summary_plot.png}
 \caption{SHAP beeswarm summary plot (50 test patients, 13 features). Features are ranked by mean absolute SHAP value.}
 \label{fig:shap_summary}
 \end{figure}
@@ -233,7 +233,7 @@ The global feature importance bar chart (Fig.~\ref{fig:shap_importance}) ranks f
 
 \begin{figure}[H]
 \centering
-\includegraphics[width=0.48\textwidth]{../outputs/shap_feature_importance.png}
+\includegraphics[width=0.48\textwidth]{./outputs/shap_feature_importance.png}
 \caption{Global SHAP feature importance: mean absolute SHAP values ranked across 50 test patients.}
 \label{fig:shap_importance}
 \end{figure}
@@ -244,7 +244,7 @@ Fig.~\ref{fig:shap_local} illustrates a SHAP waterfall plot for a single patient
 
 \begin{figure}[H]
 \centering
-\includegraphics[width=0.48\textwidth]{../outputs/shap_local_explanation.png}
+\includegraphics[width=0.48\textwidth]{./outputs/shap_local_explanation.png}
 \caption{SHAP waterfall plot for test patient \#1. Red bars increase predicted risk; blue bars decrease it.}
 \label{fig:shap_local}
 \end{figure}
