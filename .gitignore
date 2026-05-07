@@ -16,12 +16,6 @@ build/
 .ipynb_checkpoints/
 *.ipynb_checkpoints
 
-# Data (keep heart.csv tracked — remove this line if you want to exclude it)
-# heart.csv
-
-# Outputs (generated — not needed in version control)
-outputs/
-
 # OS
 .DS_Store
 Thumbs.db
