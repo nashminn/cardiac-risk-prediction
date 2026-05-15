@@ -6,7 +6,7 @@ A deep learning project that predicts cardiac disease risk from clinical feature
 
 | Item | Detail |
 |---|---|
-| Dataset | [UCI Heart Disease (Cleveland)](https://www.kaggle.com/code/mragpavank/heart-disease-uci) — 302 samples, 13 features |
+| Dataset | [UCI Heart Disease (Cleveland)](https://archive.ics.uci.edu/dataset/45/heart+disease) — 302 samples, 13 features |
 | Model | Multi-Layer Perceptron (MLP) |
 | XAI Method | SHAP — KernelExplainer |
 | Task | Binary classification: Cardiac Risk / No Risk |
@@ -19,6 +19,9 @@ cardiac-risk-prediction/
 ├── heart-disease-uci.ipynb    # Main notebook (full pipeline)
 ├── SETUP.md                   # Setup and run instructions
 ├── README.md
+├── report/                    # IEEE conference paper (LaTeX + plain text)
+│   ├── main.tex
+│   └── main_grammarly.txt
 └── outputs/                   # Generated plots (created on run)
     ├── class_distribution.png
     ├── correlation_heatmap.png
@@ -63,12 +66,14 @@ venv/bin/jupyter notebook heart-disease-uci.ipynb
 | Precision | 0.7500 |
 | Recall | 0.9091 |
 | F1-Score | 0.8219 |
-| ROC-AUC | 0.8788 |
+| ROC-AUC | 0.8766 |
+
+> Results may vary slightly across runs due to non-deterministic early stopping. The accompanying report documents one representative run.
 
 ## Data Source
 
-Dataset obtained from Kaggle: [Heart Disease UCI by mragpavank](https://www.kaggle.com/code/mragpavank/heart-disease-uci).  
-Original source: UCI Machine Learning Repository — Cleveland Heart Disease dataset.
+Cleveland Heart Disease dataset from the UCI Machine Learning Repository.  
+Citation: A. Janosi, W. Steinbrunn, M. Pfisterer, and R. Detrano, "Heart Disease," UCI ML Repository, 1989. doi: [10.24432/C52P4X](https://doi.org/10.24432/C52P4X).
 
 ## Features
 
